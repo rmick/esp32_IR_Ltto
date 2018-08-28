@@ -1,9 +1,14 @@
-# ESP32-RMT-Library-IR-code-RAW
+# ESP32-RMT-IR-Library for LTTO Lazertag
 
-This code is to help anyone out there trying to send and receive IR codes with the ESP32.
+This library allows sending and receiving LTTO/LTX/LTAR Lazertag data using the RMT hardware in the ESP32.
 
-This is a simple code to receive and then save IR received by an IR sensor connected to the ESP32 and then resend 
-it back out via an IR LED   
-
-Reason that I created this I could not find any complete examples of IR send and Received in the RAW format,
-I am hoping this code can then be used * to build on the existing IR libraries out there.
+There are 8 channels of RMT hardware in the ESP32, so you can create 8 different instances of the class to allow for multiple simultaneous Tx and Rx.
+e.g. 	1 x Tx for beacons
+	1 x Tx for tags
+	1 x Rx focussed on tagger for IFF
+	1 x Rx facing fwd
+	1 x Rx facing left
+	1 x Rx facing back
+	1 x Rx facing right
+	Depending which one/s of the last 4 Rx devices receive a tag
+	will allow the direction of the source to be determined.
