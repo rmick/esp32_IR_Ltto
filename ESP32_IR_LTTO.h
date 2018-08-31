@@ -45,6 +45,13 @@ extern "C" {
 }
 #endif
 
+struct LttoMessage
+{
+    char type;
+    unsigned int data;
+} ;
+
+
 class ESP32_IR {
   public:
     ESP32_IR();
@@ -56,13 +63,17 @@ class ESP32_IR {
     int  readIR(unsigned int *data, int maxBuf);
 //    void sendIR(unsigned int data[], int IRlength);
     void sendIR(rmt_item32_t data[], int IRlength);
+    
+    
 
   private:
     int gpioNum;
     int rmtPort;
-    void decodeRAW(rmt_item32_t *data, int numItems, unsigned int* datato);
+    void decodeRAW(rmt_item32_t *rawDataIn, int numItems, unsigned int* irDataOut);
+    bool decodeLTTO(rmt_item32_t *rawDataIn, int numItems, unsigned int *irDataOut);
     void getDataIR(rmt_item32_t item, unsigned int *datato, int index);
- //   void buildItem(rmt_item32_t &item,int high_us,int low_us);
+    void buildItem(rmt_item32_t &item,int high_us,int low_us);
+    bool checkData(rmt_item32_t *rawDataIn, int _index, int _durationToCheck, unsigned int _timing);
 };
 
 #endif /* ESP32_IR_LTTO_H_ */
