@@ -89,15 +89,18 @@ class ESP32_IR {
     bool        sendZoneBeacon(byte zoneType, byte teamID);
     bool        sendLTARbeacon(bool tagReceived, bool shieldsActive,
                                byte tagsRemaining, byte unKnown, byte teamID);
-    int         hostPlayerToGame(void (*callBack)(), uint8_t _playerNumber, uint8_t _gameType, uint8_t _gameID,
+//    int         hostPlayerToGame(void (*callBack)(), uint8_t _playerNumber, uint8_t _gameType, uint8_t _gameID,
+//                                 uint8_t _gameLength, uint8_t _health, uint8_t _reloads,
+//                                 uint8_t _shields, uint8_t _megaTags, uint8_t _flags1,
+//                                 uint8_t _flags2, uint8_t _flags3 = -1);
+    int         hostPlayerToGame(uint8_t _playerNumber, uint8_t _gameType, uint8_t _gameID,
                                  uint8_t _gameLength, uint8_t _health, uint8_t _reloads,
                                  uint8_t _shields, uint8_t _megaTags, uint8_t _flags1,
-                                 uint8_t _flags2, uint8_t _flags3 = -1);
-    
+                                 uint8_t _flags2, int8_t _flags3 = -1);
     
     char        readMessageType();
     uint16_t    readRawDataPacket();
-    void        writeCancelHosting();
+    //void        writeCancelHosting();
     //void        writeHostingInterval(int _interval);
     //int         readHostingInterval();
     
@@ -123,9 +126,9 @@ class ESP32_IR {
     int             arrayIndex;
     int             gpioNum;
     int             rmtPort;
-    bool            cancelHosting;
-    uint16_t         calculatedCheckSum;
-    uint16_t        hostingInterval;
+    uint16_t        calculatedCheckSum;
+    //bool            cancelHosting;
+    //uint16_t        hostingInterval;
     
     
     void    decodeRAW(rmt_item32_t *rawDataIn, int numItems, unsigned int* irDataOut);

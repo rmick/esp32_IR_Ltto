@@ -93,7 +93,6 @@ static RingbufHandle_t          ringBuf;
 ESP32_IR::ESP32_IR()
 {
     Serial.print("ESP32_IR::Constructing");
-    hostingInterval = 1500;
 }
 
 
@@ -223,10 +222,8 @@ void ESP32_IR::sendIR(rmt_item32_t data[], int IRlength, bool waitTilDone)
 
 void ESP32_IR::sendLttoIR(String _fullDataString)
 {
-    //rmt_item32_t    *irDataArrayLocal[100] = {0};  // new rmt_item32_t irDataArrayLocal[100] = {0};
-    
     int _delimiterPosition  = 0;
-        arrayIndex          = 0;
+        //arrayIndex          = 0;
     
     clearIRdataArray();
     //remove any whitespace (and the \r\n)
@@ -273,6 +270,7 @@ void ESP32_IR::clearIRdataArray()
         irDataArray[index].duration1 = 0;
         irDataArray[index].level1  = 0;
     }
+    arrayIndex          = 0;
 }
 
 
@@ -332,6 +330,7 @@ void ESP32_IR::encodeLTTO(char _type, uint16_t _data)
             Serial.print("\t\tESP32_IR::encodeLTTO - Checksum/s = ");
             Serial.print(_data);Serial.print(":");Serial.println(calculatedCheckSum);
             _data = calculatedCheckSum;
+            Serial.println(_data);
             break;
         default:
             Serial.println("ESP32_IR:: no match for TYPE:");
@@ -380,14 +379,6 @@ void ESP32_IR::encodeLTTO(char _type, uint16_t _data)
         irDataArray[arrayIndex].level0    = 0;
         irDataArray[arrayIndex].duration1 = 0;
         irDataArray[arrayIndex].level1    = 0;
-        
-                    //Serial.print("Item Count = ");Serial.println(arrayIndex);
-                    //   for(int index = 0; index <= arrayIndex; index++)
-                    //   {
-                    //       Serial.print(irDataArrayTx[index].duration0);Serial.print(",");
-                    //       Serial.print(irDataArrayTx[index].duration1);Serial.print(",");
-                    //   }
-                    //   Serial.println("");
     }
 }
 
@@ -416,12 +407,11 @@ int ESP32_IR::readIR(unsigned int *irDataRx, int maxBuf)
         rmt_item32_t *item = (rmt_item32_t*) xRingbufferReceive(rb, &itemSize, (TickType_t)TIMEOUT_US);
         int numItems = itemSize / sizeof(rmt_item32_t);
         if( numItems == 0)  return 0;
-        //Serial.print("ESP32_IR::Found num of Items :");Serial.println(numItems*2-1);
+        //Serial.print("ESP32_IR::readIR() - Found num of Items =");Serial.println(numItems*2-1);
         memset(irDataRx, 0, maxBuf);
         //decodeRAW(item, numItems, irDataRx);
         decodeLTTO(item, numItems, irDataRx);
         vRingbufferReturnItem(ringBuf, (void*) item);
-        //vTaskDelete(NULL);
         return (numItems*2-1);
     }
     Serial.println("ESP32_IR::readIR() - Do we ever get here?");
@@ -621,10 +611,10 @@ uint16_t ESP32_IR::readRawDataPacket()
     return lttoMessage.data;
 }
 
-void    ESP32_IR::writeCancelHosting()
-{
-    cancelHosting = true;
-}
+//void    ESP32_IR::writeCancelHosting()
+//{
+//    cancelHosting = true;
+//}
 
 
 
@@ -647,71 +637,53 @@ void    ESP32_IR::writeCancelHosting()
 //The CheckSum is the Sum of the final Hex values or Decimal values AFTER conversion (where applicable) to BCD.
 
 
-int ESP32_IR::hostPlayerToGame(void (*callBack)(), uint8_t _playerNumber, uint8_t _gameType, uint8_t _gameID,
+int ESP32_IR::hostPlayerToGame(uint8_t _playerNumber, uint8_t _gameType, uint8_t _gameID,
                                uint8_t _gameLength, uint8_t _health, uint8_t _reloads,
                                uint8_t _shields, uint8_t _megaTags, uint8_t _flags1,
-                               uint8_t _flags2, uint8_t _flags3)
+                               uint8_t _flags2,   int8_t _flags3)
 {
-    Serial.print("ESP32_IR::hostPlayerToGame() - Interval = ");
-    Serial.println(hostingInterval);
-    
     uint16_t        _taggerID               = -1;    // -1 means failed !
-    unsigned long   _timeOfLastAnnounce     = millis();
     uint8_t         _codeLength             = 0;
-    cancelHosting                           = false;
     bool            _isLtar                 = true;
     
     if(_flags3 == -1)   _isLtar = false;
     
-    Serial.print("ESP32_IR::hostPlayerToGame() - isLtar = ");
-    Serial.println(_isLtar);
-    
-    while(cancelHosting == false)
+    //callBack();
+
+    Serial.println("ESP32_IR - announcing game : ");
+
+    //convert specific data packets to BCD
+    if(_isLtar == false)
     {
-        callBack();
-        
-        if( millis() - _timeOfLastAnnounce >= hostingInterval)
-        {
-            Serial.print("ESP32_IR - announcing game : ");
-            Serial.println(millis() - _timeOfLastAnnounce);
-            
-             _timeOfLastAnnounce = millis();
-            
-            //convert specific data packets to BCD
-            if(_isLtar == false)
-            {
-                _gameLength = convertDecToBCD(_gameLength);
-                _health     = convertDecToBCD(_health);
-                _reloads    = convertDecToBCD(_reloads);
-                _shields    = convertDecToBCD(_shields);
-                _megaTags   = convertDecToBCD(_megaTags);
-            }
-  
-            clearIRdataArray();
-            
-            encodeLTTO(PACKET,  _gameType);
-            encodeLTTO(DATA,    _gameID);
-            encodeLTTO(DATA,    _gameLength);
-            encodeLTTO(DATA,    _health);
-            encodeLTTO(DATA,    _reloads);
-            encodeLTTO(DATA,    _shields);
-            encodeLTTO(DATA,    _megaTags);
-            encodeLTTO(DATA,    _flags1);
-            encodeLTTO(DATA,    _flags2);
-            if(_isLtar) encodeLTTO(DATA, _flags3);
-            encodeLTTO(CHECKSUM, 0);
-            
-            sendIR(irDataArray, sizeof(irDataArray) );
-        }
+        _gameLength = convertDecToBCD(_gameLength);
+        _health     = convertDecToBCD(_health);
+        _reloads    = convertDecToBCD(_reloads);
+        _shields    = convertDecToBCD(_shields);
+        _megaTags   = convertDecToBCD(_megaTags);
+    }
+
+    clearIRdataArray();
+
+    encodeLTTO('P',  _gameType);
+    encodeLTTO(DATA,    _gameID);
+    encodeLTTO(DATA,    _gameLength);
+    encodeLTTO(DATA,    _health);
+    encodeLTTO(DATA,    _reloads);
+    encodeLTTO(DATA,    _shields);
+    encodeLTTO(DATA,    _megaTags);
+    encodeLTTO(DATA,    _flags1);
+    encodeLTTO(DATA,    _flags2);
+    if(_isLtar) encodeLTTO(DATA, _flags3);
+    encodeLTTO(CHECKSUM, 0);
+
+    sendIR(irDataArray, sizeof(irDataArray) );
         
     //pseudo code
     //  if(cancelHosting) interval = infinite
     //  if(interval > millis() ) sendHostGame
     //  if(irReply.startsWith "P16" respond
     //    else if(irReply.startsWith "P17" respond
-    
-    }
-    
+
     return _taggerID;
 }
 
