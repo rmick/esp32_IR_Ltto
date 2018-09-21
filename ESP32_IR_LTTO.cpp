@@ -278,7 +278,7 @@ void ESP32_IR::clearIRdataArray()
 
 
 //void ESP32_IR::encodeLTTO(rmt_item32_t *irDataArrayLocal, char _type, int _data)
-void ESP32_IR::encodeLTTO(char _type, uint8_t _data)
+void ESP32_IR::encodeLTTO(char _type, uint16_t _data)
 {
     Serial.print("\tESP32_IR::encodeLTTO (String) - ");
     Serial.print(_type);Serial.print(" ");
@@ -375,7 +375,7 @@ void ESP32_IR::encodeLTTO(char _type, uint8_t _data)
     
     if(_setEndOfPacket)
     {
-        //Serial.println("ESP32:: setEndOfPacket");
+        //Serial.println("\tESP32:: setEndOfPacket");
         irDataArray[arrayIndex].duration0 = 0;
         irDataArray[arrayIndex].level0    = 0;
         irDataArray[arrayIndex].duration1 = 0;

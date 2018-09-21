@@ -124,7 +124,7 @@ class ESP32_IR {
     int             gpioNum;
     int             rmtPort;
     bool            cancelHosting;
-    uint8_t         calculatedCheckSum;
+    uint16_t         calculatedCheckSum;
     uint16_t        hostingInterval;
     
     
@@ -136,7 +136,7 @@ class ESP32_IR {
     bool    decodeLTTO(rmt_item32_t *rawDataIn, int numItems, unsigned int *irDataOut);
     bool    checkData(rmt_item32_t *rawDataIn, int _index, int _itemToCheck, unsigned int _expectedDuration);
     //void encodeLTTO(rmt_item32_t *irDataArrayLocal, char _type, int _data);
-    void    encodeLTTO(char _type, uint8_t _data);
+    void    encodeLTTO(char _type, uint16_t _data);
     void    clearIRdataArray();
     
     int     convertDecToBCD(int _dec);
