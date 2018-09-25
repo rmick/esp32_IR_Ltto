@@ -93,10 +93,11 @@ class ESP32_IR {
 //                                 uint8_t _gameLength, uint8_t _health, uint8_t _reloads,
 //                                 uint8_t _shields, uint8_t _megaTags, uint8_t _flags1,
 //                                 uint8_t _flags2, uint8_t _flags3 = -1);
-    int         hostPlayerToGame(uint8_t _playerNumber, uint8_t _gameType, uint8_t _gameID,
-                                 uint8_t _gameLength, uint8_t _health, uint8_t _reloads,
-                                 uint8_t _shields, uint8_t _megaTags, uint8_t _flags1,
-                                 uint8_t _flags2, int8_t _flags3 = -1);
+    int         hostPlayerToGame(uint8_t _teamNumber, uint8_t _playerNumber, uint8_t _gameType,
+                                 uint8_t _gameID,     uint8_t _gameLength,   uint8_t _health,
+                                 uint8_t _reloads,    uint8_t _shields,      uint8_t _megaTags,
+                                 uint8_t _flags1,     uint8_t _flags2,       int8_t _flags3 = -1);
+    void        assignPlayer(uint8_t _gameID, uint8_t _taggerID, uint8_t _teamNumber, uint8_t _playerNumber);
     
     char        readMessageType();
     uint16_t    readRawDataPacket();
@@ -123,6 +124,7 @@ class ESP32_IR {
 
   private:
     rmt_item32_t    irDataArray[ARRAY_SIZE];
+    int             irDataRxArray[50]
     int             arrayIndex;
     int             gpioNum;
     int             rmtPort;
@@ -139,7 +141,8 @@ class ESP32_IR {
     bool    decodeLTTO(rmt_item32_t *rawDataIn, int numItems, unsigned int *irDataOut);
     bool    checkData(rmt_item32_t *rawDataIn, int _index, int _itemToCheck, unsigned int _expectedDuration);
     //void encodeLTTO(rmt_item32_t *irDataArrayLocal, char _type, int _data);
-    void    encodeLTTO(char _type, uint16_t _data);
+    void    encodeLTTO(char _type, uint16_t _data = 0);
+    int     convertTeamAndPlayer(uint8_t _teamNumber, uint8_t _playerNumber);
     void    clearIRdataArray();
     
     int     convertDecToBCD(int _dec);

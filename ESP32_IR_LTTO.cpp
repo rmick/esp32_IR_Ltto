@@ -262,7 +262,7 @@ void ESP32_IR::sendLttoIR(char _type, int _data)
 
 void ESP32_IR::clearIRdataArray()
 {
-    Serial.println("ESP32_IR::clearIRdataArray");
+    //Serial.println("ESP32_IR::clearIRdataArray");
     for(int index = 0; index < ARRAY_SIZE; index++)
     {
         irDataArray[index].duration0 = 0;
@@ -278,10 +278,6 @@ void ESP32_IR::clearIRdataArray()
 //void ESP32_IR::encodeLTTO(rmt_item32_t *irDataArrayLocal, char _type, int _data)
 void ESP32_IR::encodeLTTO(char _type, uint16_t _data)
 {
-    Serial.print("\tESP32_IR::encodeLTTO (String) - ");
-    Serial.print(_type);Serial.print(" ");
-    Serial.println(_data);
-    
     int             _syncHeader         = 0;
     int             _bitCount           = 0;
     int             _endOfPacketDelay   = 0;
@@ -327,15 +323,18 @@ void ESP32_IR::encodeLTTO(char _type, uint16_t _data)
             _setEndOfPacket     = true;
             calculatedCheckSum  = calculatedCheckSum % 256;      // CheckSum is the remainder of dividing by 256.
             calculatedCheckSum  = calculatedCheckSum | 256;      // Set the required 9th MSB bit to 1 to indicate it is a checksum
-            Serial.print("\t\tESP32_IR::encodeLTTO - Checksum/s = ");
-            Serial.print(_data);Serial.print(":");Serial.println(calculatedCheckSum);
+            //Serial.print("\t\tESP32_IR::encodeLTTO - Checksum/s = ");
+            //Serial.print(_data);Serial.print(":");Serial.println(calculatedCheckSum);
             _data = calculatedCheckSum;
-            Serial.println(_data);
             break;
         default:
-            Serial.println("ESP32_IR:: no match for TYPE:");
+            Serial.println("ESP32_IR:: ERROR - No match for TYPE:");
             break;
     }
+    
+    //Serial.print("\tESP32_IR::encodeLTTO (String) - ");
+    //Serial.print(_type);Serial.print(" ");
+    //Serial.println(_data);
     
     //Populate the array
     //PreSync
@@ -392,7 +391,37 @@ void ESP32_IR::stopIR()
     rmt_driver_uninstall(config.channel);
 }
 
-
+bool ESP32_IR::irAvailabl()
+{
+    bool returnValue = false;
+    
+    RingbufHandle_t rb = NULL;
+    rmt_config_t config;
+    config.channel = (rmt_channel_t)rmtPort;
+    rmt_get_ringbuf_handle(config.channel, &rb);
+    
+    while(rb)
+    {
+        size_t itemSize = 0;    //Size of ringBuffer data
+        rmt_item32_t *item = (rmt_item32_t*) xRingbufferReceive(rb, &itemSize, (TickType_t)TIMEOUT_US);
+        int numItems = itemSize / sizeof(rmt_item32_t);
+        
+        if( numItems == 0)
+        {
+            returnValue = false;
+        }
+        else
+        {
+            memset(irDataRx, 0, maxBuf);
+            decodeLTTO(item, numItems, irDataRx);
+            vRingbufferReturnItem(ringBuf, (void*) item);
+            returnValue = true;
+        }
+        
+    }
+    //vTaskDelete(NULL);
+    return returnValue;
+}
 
 int ESP32_IR::readIR(unsigned int *irDataRx, int maxBuf)
 {
@@ -618,7 +647,6 @@ uint16_t ESP32_IR::readRawDataPacket()
 
 
 
-
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -637,10 +665,10 @@ uint16_t ESP32_IR::readRawDataPacket()
 //The CheckSum is the Sum of the final Hex values or Decimal values AFTER conversion (where applicable) to BCD.
 
 
-int ESP32_IR::hostPlayerToGame(uint8_t _playerNumber, uint8_t _gameType, uint8_t _gameID,
-                               uint8_t _gameLength, uint8_t _health, uint8_t _reloads,
-                               uint8_t _shields, uint8_t _megaTags, uint8_t _flags1,
-                               uint8_t _flags2,   int8_t _flags3)
+int ESP32_IR::hostPlayerToGame(uint8_t _teamNumber, uint8_t _playerNumber,  uint8_t _gameType,
+                               uint8_t _gameID,     uint8_t _gameLength,    uint8_t _health,
+                               uint8_t _reloads,    uint8_t _shields,       uint8_t _megaTags,
+                               uint8_t _flags1,     uint8_t _flags2,        int8_t _flags3)
 {
     uint16_t        _taggerID               = -1;    // -1 means failed !
     uint8_t         _codeLength             = 0;
@@ -650,7 +678,7 @@ int ESP32_IR::hostPlayerToGame(uint8_t _playerNumber, uint8_t _gameType, uint8_t
     
     //callBack();
 
-    Serial.println("ESP32_IR - announcing game : ");
+    //Serial.println("ESP32_IR - announcing game : ");
 
     //convert specific data packets to BCD
     if(_isLtar == false)
@@ -664,7 +692,7 @@ int ESP32_IR::hostPlayerToGame(uint8_t _playerNumber, uint8_t _gameType, uint8_t
 
     clearIRdataArray();
 
-    encodeLTTO('P',  _gameType);
+    encodeLTTO(PACKET,  _gameType);
     encodeLTTO(DATA,    _gameID);
     encodeLTTO(DATA,    _gameLength);
     encodeLTTO(DATA,    _health);
@@ -687,6 +715,45 @@ int ESP32_IR::hostPlayerToGame(uint8_t _playerNumber, uint8_t _gameType, uint8_t
     return _taggerID;
 }
 
+void ESP32_IR::assignPlayer(uint8_t _gameID, uint8_t _taggerID, uint8_t _teamNumber, uint8_t _playerNumber)
+{
+    Serial.print("ESP32_IR::assignPlayer() - Team = ");Serial.print(_teamNumber);Serial.print(", Player = ");Serial.println(_playerNumber);
+    
+    uint8_t _teamAndPlayer = convertTeamAndPlayer(_teamNumber, _playerNumber);
+    
+    clearIRdataArray();
+    
+    encodeLTTO(PACKET,  1);
+    encodeLTTO(DATA,    _gameID);
+    encodeLTTO(DATA,    _taggerID);
+    encodeLTTO(DATA,    _teamAndPlayer);
+    encodeLTTO(CHECKSUM);
+    
+    sendIR(irDataArray, sizeof(irDataArray) );
+    
+}
+
+int ESP32_IR::convertTeamAndPlayer(uint8_t _teamNumber, uint8_t _playerNumber)
+{
+    uint8_t _teamAndPlayer = 0;
+    
+    if(_teamNumber == 0)    //zero-based player number + 8
+    {
+        Serial.println("ESP32_IR::convertTeamAndPlayer() - Team = 0");
+        _teamAndPlayer = _playerNumber + 7;
+    }
+    else
+    {
+        Serial.print("ESP32_IR::convertTeamAndPlayer() - Team = ");Serial.println(_teamNumber);
+        _teamAndPlayer = _teamNumber << 3;
+        _teamAndPlayer += (_playerNumber -1);
+    }
+    Serial.print("ESP32_IR::convertTeamAndPlayer() = ");Serial.println(_teamAndPlayer);
+    return _teamAndPlayer;
+}
+
+
+
 
 int ESP32_IR::convertDecToBCD(int _dec)
 {
@@ -699,14 +766,4 @@ int ESP32_IR::convertBCDtoDec(int _bcd)
     if (_bcd == 0xFF) return _bcd;
     return (int) (((_bcd >> 4) & 0xF) *10) + (_bcd & 0xF);
 }
-
-//void ESP32_IR::writeHostingInterval(int _interval)
-//{
-//    hostingInterval = _interval;
-//}
-//
-//int ESP32_IR::readHostingInterval()
-//{
-//    return  hostingInterval;
-//}
 
