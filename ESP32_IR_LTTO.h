@@ -74,6 +74,7 @@ class ESP32_IR {
     void    initTransmit();
     void    stopIR();
     int     readIR(unsigned int *data, int maxBuf);
+    bool    irAvailabl();
     void    sendIR(rmt_item32_t data[], int IRlength, bool waitTilDone = false);
     void    sendLttoIR(char _type, int _data);
     void    sendLttoIR(String _fullDataString);
@@ -82,6 +83,7 @@ class ESP32_IR {
     int     getLttoMessagePlayerNum();
     int     getLttoMessageMegatag();
     
+    //Generic methods
     void        sendIR(char type, uint8_t message);
     bool        sendLTAG(byte tagPower);
     bool        sendTag(byte teamID, byte playerID, byte tagPower);
@@ -89,15 +91,31 @@ class ESP32_IR {
     bool        sendZoneBeacon(byte zoneType, byte teamID);
     bool        sendLTARbeacon(bool tagReceived, bool shieldsActive,
                                byte tagsRemaining, byte unKnown, byte teamID);
-//    int         hostPlayerToGame(void (*callBack)(), uint8_t _playerNumber, uint8_t _gameType, uint8_t _gameID,
-//                                 uint8_t _gameLength, uint8_t _health, uint8_t _reloads,
-//                                 uint8_t _shields, uint8_t _megaTags, uint8_t _flags1,
-//                                 uint8_t _flags2, uint8_t _flags3 = -1);
+    
+    //HostGame methods
     int         hostPlayerToGame(uint8_t _teamNumber, uint8_t _playerNumber, uint8_t _gameType,
                                  uint8_t _gameID,     uint8_t _gameLength,   uint8_t _health,
                                  uint8_t _reloads,    uint8_t _shields,      uint8_t _megaTags,
                                  uint8_t _flags1,     uint8_t _flags2,       int8_t _flags3 = -1);
-    void        assignPlayer(uint8_t _gameID, uint8_t _taggerID, uint8_t _teamNumber, uint8_t _playerNumber);
+    void        assignPlayer(uint8_t _gameID, uint8_t _taggerID, uint8_t _teamNumber, uint8_t _playerNumber, bool _isLtar = false);
+    void        assignPlayerFailed(uint8_t _gameID, uint8_t _taggerID, bool _isLtar = false);
+    void        ltarAssignPlayerSuccess(uint8_t _gameID, uint8_t _teamNumber, uint8_t _playerNumber);
+    
+    //Debrief methods
+    void        requestTagReport(uint8_t _gameID, uint8_t _teamNumber, uint8_t _playerNumber, uint8_t _reportRequired);
+    
+    //Tagger methods
+    void        taggerRequestToJoin(uint8_t _gameID, uint8_t _taggerID, uint8_t _preferredTeam);
+    void        taggerAckPlayerAssign(uint8_t _gameID, uint8_t _taggerID);
+    void        taggerTagSummary(uint8_t _gameID,           uint8_t _teamAndPlayerNumber,   uint8_t _totalNumberTagsRx,
+                                 uint8_t _survivalMinutes,  uint8_t _survivalSeconds,       uint8_t _zoneTimeMinutes,
+                                 uint8_t _zoneTimeSeconds,  uint8_t _teamReportFlag);
+    void        taggerTeamReport(uint8_t _teamToReport,     uint8_t _gameID,                uint8_t _teamAndPlayerNumber,
+                                 uint8_t _playersIncluded,  uint8_t _player1tags,           uint8_t _player2tags,
+                                 uint8_t _player3tags,      uint8_t _player4tags,           uint8_t _player5tags,
+                                 uint8_t _player6tags,      uint8_t _player7tags,           uint8_t _player8tags);
+    
+    
     
     char        readMessageType();
     uint16_t    readRawDataPacket();
@@ -124,7 +142,7 @@ class ESP32_IR {
 
   private:
     rmt_item32_t    irDataArray[ARRAY_SIZE];
-    int             irDataRxArray[50]
+    int             irDataRxArray[50];
     int             arrayIndex;
     int             gpioNum;
     int             rmtPort;
