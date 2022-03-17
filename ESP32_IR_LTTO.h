@@ -65,6 +65,12 @@ struct hostGameData
     
 };
 
+struct taggerData
+{
+    int             playerID;
+    int             teamID;
+};
+
 class ESP32_IR {
   public:
     ESP32_IR();
@@ -78,6 +84,8 @@ class ESP32_IR {
     void    sendIR(rmt_item32_t data[], int IRlength, bool waitTilDone = false);
     void    sendLttoIR(char _type, int _data);
     void    sendLttoIR(String _fullDataString);
+    
+        void    sendBrxTest();
     
     int     getLttoMessageTeamNum();
     int     getLttoMessagePlayerNum();
@@ -105,7 +113,7 @@ class ESP32_IR {
     void        requestTagReport(uint8_t _gameID, uint8_t _teamNumber, uint8_t _playerNumber, uint8_t _reportRequired);
     
     //Tagger methods
-    void        taggerRequestToJoin(uint8_t _gameID, uint8_t _taggerID, uint8_t _preferredTeam);
+    void        taggerRequestToJoin(uint8_t _gameID, uint8_t _taggerID, uint8_t _preferredTeam, bool _isLtar = false);
     void        taggerAckPlayerAssign(uint8_t _gameID, uint8_t _taggerID);
     void        taggerTagSummary(uint8_t _gameID,           uint8_t _teamAndPlayerNumber,   uint8_t _totalNumberTagsRx,
                                  uint8_t _survivalMinutes,  uint8_t _survivalSeconds,       uint8_t _zoneTimeMinutes,
@@ -160,7 +168,8 @@ class ESP32_IR {
     bool    checkData(rmt_item32_t *rawDataIn, int _index, int _itemToCheck, unsigned int _expectedDuration);
     //void encodeLTTO(rmt_item32_t *irDataArrayLocal, char _type, int _data);
     void    encodeLTTO(char _type, uint16_t _data = 0);
-    int     convertTeamAndPlayer(uint8_t _teamNumber, uint8_t _playerNumber);
+    int     encodeTeamAndPlayer(uint8_t _teamNumber, uint8_t _playerNumber);
+    bool    decodeTeamAndPlayer(uint8_t _teamAndPlayerNumber);
     void    clearIRdataArray();
     
     int     convertDecToBCD(int _dec);
